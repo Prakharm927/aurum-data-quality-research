@@ -1,6 +1,6 @@
 # Aurum diagrams
 
-[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Sources](sources.md)
+[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md) · [Sources](sources.md)
 
 ## 1. The proposed Aurum quality flow
 
@@ -65,13 +65,55 @@ The simplest difference is:
 - **Google Automatic Data Quality**: natural when data is already in BigQuery or another supported Google-side table.
 - **Microsoft Purview Data Quality**: natural for Microsoft/Azure environments using supported Purview DQ sources.
 
-The cloud provider runs the DQ service, but Aurum still owns the final promotion decision.
-
 See [Group 2 tools](group2-tools.md).
 
 ---
 
-## 4. US Funds example used across both groups
+## 4. Group 3 — commercial data observability
+
+```mermaid
+flowchart TD
+  bronze["Aurum Bronze"] --> silver["Aurum Silver"]
+  silver --> gold["Aurum Gold"]
+
+  bronze -.-> obs["Monte Carlo / Anomalo / Bigeye"]
+  silver -.-> obs
+  gold -.-> obs
+
+  history["Historical behavior"] --> obs
+  rules["Rules / custom monitors"] --> obs
+
+  obs --> detect["Anomaly or DQ issue"]
+  detect --> investigate["Incident / lineage / investigation context"]
+  investigate --> aurum["Aurum response"]
+```
+
+Group 3 is broader than a simple rule runner.
+
+These tools can still run explicit rules, but their main emphasis is:
+
+```text
+continuous monitoring
++ learned anomalies
++ incidents
++ investigation context
++ lineage/impact where supported
+```
+
+For the US Funds example, think:
+
+```text
+normal comparable reload ≈ 75M rows
+later reload = 40M rows
+        ↓
+observability platform flags unusual behavior
+```
+
+See [Group 3 tools](group3-tools.md).
+
+---
+
+## 5. US Funds example used across the groups
 
 The research uses the same current Aurum dataset so the tools are easy to compare:
 
@@ -103,7 +145,7 @@ One fund appears on many dates, so `fund_symbol` alone must not be treated as un
 
 ---
 
-## 5. How to read the per-tool diagrams
+## 6. How to read the per-tool diagrams
 
 ### Group 1
 
@@ -123,5 +165,13 @@ One fund appears on many dates, so `fund_symbol` alone must not be treated as un
 | AWS Glue DQ | PostgreSQL can connect through JDBC before AWS runs the checks |
 | Google Automatic DQ | Current PostgreSQL data needs to be available in a supported Google table |
 | Microsoft Purview DQ | First confirm that the source is supported for Purview Data Quality |
+
+### Group 3
+
+| Diagram | What to notice |
+|---|---|
+| Monte Carlo | PostgreSQL monitors compare current behavior with expected behavior; Postgres lineage is not listed in the current connector support |
+| Anomalo | Historical patterns and explicit rules both feed monitoring |
+| Bigeye | Profiling produces metrics/rules, which feed incidents and lineage-aware investigation |
 
 All diagrams describe proposed integrations. They are alternatives or complementary pieces, not tools that all need to be deployed together.
