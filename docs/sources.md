@@ -1,15 +1,17 @@
 # Sources
 
-[Home](../README.md) · [Group 1 guide](group1-tools.md)
+[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md)
 
-Reviewed on 8 October 2026. Product behavior is described from official documentation. Aurum fit and the shortlist are engineering assessments.
+Reviewed on 9 October 2026. Product behavior is described from official documentation. Aurum fit and the shortlists are engineering assessments.
 
 ## Input context
 
-- User-provided comparison workbook: `Data_Quality_Tools_Comparisons.xlsx`, especially the Comparison and How It Works sheets.
+- User-provided comparison workbook: Data_Quality_Tools_Comparisons.xlsx, especially the Comparison and How It Works sheets.
 - User-provided Aurum project context: PostgreSQL-oriented Bronze, Silver and Gold design, and the completed US Funds scan.
-- The earlier scan reported 75,657,739 mutual-fund price rows across A–Z files. This guide did not rerun that scan.
-- Example rows, later reload sizes, Bronze schema name and the `price` alias are illustrative. Candidate rules require the dataset owner's agreement.
+- The earlier scan reported 23,783 mutual-fund metadata rows, 75,657,739 mutual-fund price rows, 2,310 ETF metadata rows and 3,866,030 ETF price rows.
+- Example rows, later reload sizes, Bronze schema name and the price alias are illustrative. Candidate rules require the dataset owner's agreement.
+
+# Group 1 sources
 
 ## Soda
 
@@ -19,7 +21,7 @@ Reviewed on 8 October 2026. Product behavior is described from official document
 - [Soda v3 scans](https://docs.soda.io/soda-documentation/soda-v3/run-a-scan): scan usage and results.
 - [Soda CLI reference](https://docs.soda.io/reference/cli-reference): contract verification commands.
 
-Version correction from the workbook: current v4 packages such as `soda-postgres` are on public PyPI. The workbook's statement that v4 requires Soda's private package index is not current. The YAML example in this guide is explicitly v3 syntax.
+Version correction from the workbook: current v4 packages such as soda-postgres are on public PyPI. The workbook's statement that v4 requires Soda's private package index is not current. The YAML example in the guide is explicitly v3 syntax.
 
 ## Great Expectations
 
@@ -51,7 +53,7 @@ Version correction from the workbook: Java 8 is not a universal requirement. The
 - [Product FAQ](https://docs.elementary-data.com/cloud/resources/faq): OSS dbt dependency and Cloud scope.
 - [Volume anomalies](https://docs.elementary-data.com/data-tests/anomaly-detection-tests/volume-anomalies): historical comparisons, complete buckets and severity.
 
-Configuration correction from the workbook: `timestamp_column` is recommended, not mandatory, for volume anomalies. Without it, total table row counts are used.
+Configuration correction from the workbook: timestamp_column is recommended, not mandatory, for volume anomalies. Without it, total table row counts are used.
 
 ## OpenMetadata
 
@@ -59,6 +61,31 @@ Configuration correction from the workbook: `timestamp_column` is recommended, n
 
 Lineage completeness depends on ingestion configuration and available query or pipeline metadata. It is not guaranteed merely by registering PostgreSQL.
 
+# Group 2 sources
+
+## AWS Glue Data Quality
+
+- [AWS Glue Data Quality overview](https://docs.aws.amazon.com/glue/latest/dg/glue-data-quality.html): Data Catalog and ETL-job DQ features, results, anomaly support and supported source categories.
+- [DQDL reference](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html): AWS Data Quality Definition Language.
+- [Data Catalog DQ getting started and supported source types](https://docs.aws.amazon.com/glue/latest/dg/data-quality-getting-started.html): JDBC support and source limitations.
+- [AWS Glue JDBC connections](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-connect-jdbc-home.html): native PostgreSQL JDBC connection support.
+
+## Google Cloud automatic data quality
+
+- [Auto data quality overview](https://docs.cloud.google.com/knowledge-catalog/docs/auto-data-quality-overview): managed scans, supported table model, rules and monitoring.
+- [Use auto data quality](https://docs.cloud.google.com/knowledge-catalog/docs/use-auto-data-quality): creating and running DQ scans.
+- [Data profiling](https://docs.cloud.google.com/knowledge-catalog/docs/use-data-profiling): column statistics and rule recommendations.
+
+Google documentation now uses the Knowledge Catalog name for capabilities previously associated with Dataplex Universal Catalog.
+
+## Microsoft Purview Data Quality
+
+- [Purview Data Quality overview](https://learn.microsoft.com/en-us/purview/unified-catalog-data-quality): profiling, rules, scans, monitoring and operational requirements.
+- [Supported Data Quality sources](https://learn.microsoft.com/en-us/purview/unified-catalog-data-quality-supported-sources-file-formats): current supported sources and formats for profiling and DQ scans.
+- [PostgreSQL in Purview Data Map](https://learn.microsoft.com/en-us/purview/register-scan-postgresql): PostgreSQL metadata scanning and lineage capabilities.
+
+Important distinction: PostgreSQL support in Purview Data Map does not mean PostgreSQL is supported by Purview Data Quality. The current Data Quality supported-source list does not include PostgreSQL.
+
 ## Validation scope
 
-This is documentation research. No DQ engine was installed, benchmarked or connected to the Aurum runtime as part of this update.
+This is documentation research. None of these DQ engines was benchmarked or connected to the Aurum runtime as part of this update.
