@@ -1,448 +1,527 @@
 # Group 2 tools for Aurum
 
-[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Sources](sources.md)
+[Home](../README.md) · [Aurum diagrams](diagrams.md) · [Group 1 guide](group1-tools.md) · [Sources](sources.md)
 
 ## What Group 2 means
 
 Group 2 contains **cloud-managed data-quality services**.
 
-Simple idea:
+The simplest way to think about them is:
 
-> Aurum gives the cloud service access to the data, the cloud service runs the checks, and Aurum uses the result to decide whether data can move forward.
+> Group 1: Aurum runs or manages the DQ tool.  
+> Group 2: AWS, Google, or Microsoft runs the DQ service for us.
 
-Aurum still owns the final pipeline decision.
+The cloud service checks the data and returns results. **Aurum still decides what happens next.**
 
-~~~mermaid
+```mermaid
 flowchart LR
   files["US Funds files"] --> bronze["Aurum Bronze"]
-  bronze --> cloud["Cloud DQ service"]
+  bronze --> cloud["Managed cloud DQ service"]
   rules["Quality rules"] --> cloud
-  cloud --> result["DQ result"]
+  cloud --> result["PASS / FAIL / execution error"]
   result --> policy{"Aurum policy"}
   policy -->|"Pass"| silver["Promote to Silver"]
-  policy -->|"Blocking failure"| hold["Hold / investigate"]
-~~~
+  policy -->|"Blocking failure"| hold["Hold and investigate"]
+```
 
-The provider runs most of the DQ infrastructure for us, but Aurum still has to handle connections, permissions, the final pass/fail policy, evidence, and what happens after a failure.
+A cloud DQ service does not replace Aurum. Aurum still owns the pipeline, promotion rules, evidence, reporting, and failure handling.
 
 ---
 
-## The shared Aurum example — US Funds
+## Our shared Aurum example — US Funds
 
 The current US Funds dataset has **29 physical CSV files** mapped into four logical tables:
 
-| Logical table | Historical rows from the completed run | Simple meaning |
+| Logical table | Rows from the completed run | What it contains |
 |---|---:|---|
-| mutual_funds | 23,783 | Mutual-fund metadata |
-| mutual_fund_prices | 75,657,739 | Mutual-fund price history from A-Z files |
-| etfs | 2,310 | ETF metadata |
-| etf_prices | 3,866,030 | ETF price history |
+| `mutual_funds` | 23,783 | Mutual-fund details |
+| `mutual_fund_prices` | 75,657,739 | Mutual-fund price history from A-Z files |
+| `etfs` | 2,310 | ETF details |
+| `etf_prices` | 3,866,030 | ETF price history |
 
-For teaching, imagine Bronze contains:
+For the examples below, focus on:
 
-'bronze.mutual_fund_prices(fund_symbol, price_date, price)'
+```text
+A.csv to Z.csv
+      ↓
+Bronze mutual_fund_prices
+      ↓
+~75.7 million rows
+```
 
-**price is only a teaching alias. Map it to the real price column before implementation.**
-
-Candidate checks:
-
-| Check | Aurum example |
-|---|---|
-| Missing value | fund_symbol and price_date should be present |
-| Duplicate | the pair fund_symbol + price_date should not repeat |
-| Value range | price should follow an agreed valid range |
-| Relationship | every price symbol should exist in mutual_funds |
-| Load volume | the load should contain the expected scope of rows/files |
-
-Important: a fund appears on many dates, so **fund_symbol alone must not be treated as unique in a price-history table**.
-
-These are candidate rules for explaining the tools. Required columns, keys and price limits still need owner agreement.
-
-### One bad load
-
-Imagine Aurum receives these rows:
+Imagine these rows appear in Bronze:
 
 | fund_symbol | price_date | price | Problem |
 |---|---|---:|---|
 | ABCDX | 2021-01-04 | 25.40 | None |
-| NULL | 2021-01-04 | 18.00 | Missing symbol |
+| NULL | 2021-01-04 | 18.00 | Missing fund symbol |
 | ABCDX | 2021-01-04 | 26.10 | Same fund + date as row 1 |
-| XYZDX | 2021-01-05 | -3.00 | Invalid if the agreed rule is price >= 0 |
+| XYZDX | 2021-01-05 | -3.00 | Invalid if agreed rule is price >= 0 |
 
-We use this same load for all three Group 2 tools.
+Candidate Aurum checks:
+
+1. `fund_symbol` should be present.
+2. `price_date` should be present.
+3. `fund_symbol + price_date` should not repeat.
+4. Price should follow the agreed range.
+5. Every price symbol should exist in the metadata table.
+6. The load should contain the expected files/rows.
+
+Important: **`fund_symbol` alone is not unique in a price-history table.** One fund appears on many dates.
 
 ---
 
 # 1. AWS Glue Data Quality
 
-## Simple idea
+## Simple meaning
 
-**AWS Glue Data Quality is AWS's managed service for checking data.**
+**AWS Glue Data Quality = AWS runs the data-quality checks for us.**
 
-Instead of Aurum running a DQ library itself, AWS runs the checking job.
+Aurum does not need to host the DQ engine itself.
 
-Rules are written in **DQDL — Data Quality Definition Language**. Think of DQDL as AWS's rule language.
+For our current setup, the important point is that AWS Glue can connect to PostgreSQL through **JDBC**.
 
-Example idea:
-
-~~~text
-fund_symbol must be present
-price_date must be present
-fund_symbol + price_date must not repeat
-price must follow the agreed range
-~~~
+JDBC simply means a standard database connection.
 
 ## Aurum + US Funds flow
 
-~~~mermaid
+```mermaid
 flowchart TD
-  pg["Aurum PostgreSQL Bronze\nmutual_fund_prices"] --> conn["AWS Glue JDBC connection"]
-  conn --> catalog["Glue Data Catalog / Glue job"]
-  dqdl["DQDL rules"] --> check["AWS Glue Data Quality"]
-  catalog --> check
-  check --> result["DQ score + rule results"]
+  files["A-Z US Funds price files"] --> bronze["Aurum PostgreSQL Bronze<br/>mutual_fund_prices"]
+  bronze --> jdbc["AWS Glue JDBC connection"]
+  jdbc --> glue["AWS Glue Data Quality"]
+  rules["AWS DQ rules"] --> glue
+  glue --> result["Rule results / DQ score"]
   result --> policy{"Aurum policy"}
   policy -->|"Pass"| silver["Promote to Silver"]
-  policy -->|"Fail"| hold["Hold / investigate"]
-~~~
+  policy -->|"Fail"| hold["Hold and investigate"]
+```
 
-### What happens in our example?
+## What happens in our example?
 
-1. Aurum loads the A-Z data into PostgreSQL Bronze.
-2. AWS Glue connects to PostgreSQL through JDBC.
-3. Glue runs rules on mutual_fund_prices.
-4. The missing symbol, duplicate fund-date and invalid-price rule can fail.
-5. Glue returns quality results.
-6. **Aurum** decides whether the load can move to Silver.
+Suppose Aurum loads A-Z files into `bronze.mutual_fund_prices`.
 
-AWS Glue supports PostgreSQL through its JDBC connection route. AWS Glue Data Quality supports JDBC sources compatible with the Data Catalog.
+AWS Glue checks:
 
-## One important detail
+```text
+fund_symbol missing?
+price_date missing?
+fund_symbol + price_date duplicated?
+price outside the agreed range?
+```
 
-AWS Glue has two common DQ paths:
+If Glue finds the bad rows above, it returns failed rule results.
 
-- **Data Catalog DQ** — run rules against cataloged data.
-- **Glue ETL job DQ** — put a DQ step inside a Glue ETL job.
+Then:
 
-For Aurum, this matters because AWS documents failed-record identification for the ETL-job path, while Data Catalog DQ mainly gives rule results and scores.
+```text
+AWS Glue says: FAIL
+        ↓
+Aurum decides:
+hold the load
+show the issue
+do not promote to Silver
+```
 
-## Why it could fit Aurum
+The important point is:
 
-- It can connect to PostgreSQL through JDBC.
-- AWS manages the DQ compute.
-- It supports rules, schedules, monitoring and anomaly features.
-- DQ results can be connected to AWS monitoring services.
+> **AWS detects the problem. Aurum decides what to do with it.**
+
+## Why it fits our current Aurum setup
+
+Our prototype is PostgreSQL-first.
+
+So the path can be:
+
+```text
+Aurum PostgreSQL
+      ↓
+AWS Glue through JDBC
+      ↓
+DQ result
+      ↓
+Aurum
+```
+
+That is why AWS Glue is the most direct Group 2 option for the current prototype.
 
 ## Main catch
 
-Aurum becomes dependent on AWS setup:
+Managed does **not** mean zero setup.
 
-~~~text
+We still need things such as:
+
+```text
 AWS account
-+ IAM permissions
-+ Glue connection
-+ network/VPC access
-+ Glue/Data Catalog configuration
-+ cloud cost
-~~~
-
-So managed does **not** mean zero setup.
+IAM permissions
+network access
+Glue connection
+configuration
+cloud cost
+```
 
 ### Easy meeting line
 
-> "AWS Glue Data Quality can reach our PostgreSQL-style setup through JDBC, run AWS DQ rules, and return results. Aurum would still decide whether the US Funds load is promoted or held."
+> "AWS Glue can connect to our PostgreSQL Bronze data through JDBC, run DQ checks on the US Funds table, and return the result. Aurum still decides whether the load moves to Silver."
+
+[Official references](sources.md#aws-glue-data-quality)
 
 ---
 
-# 2. Google Cloud Dataplex / Knowledge Catalog Automatic Data Quality
+# 2. Google Automatic Data Quality
 
-## Simple idea
+## Simple meaning
 
-Google's managed DQ service runs **data-quality scans**.
+**Google Automatic Data Quality = Google runs managed DQ scans on supported Google-side tables.**
 
-You define rules such as:
+The most important example is **BigQuery**.
 
-~~~text
-fund_symbol is not null
-price is in a valid range
-values are unique where required
-custom SQL rule
-~~~
+BigQuery is Google's cloud data warehouse.
 
-Google runs the scan and stores the results.
+## Why this is different for Aurum
 
-The product name has changed over time. Current Google documentation refers to **Knowledge Catalog automatic data quality**, previously associated with **Dataplex Universal Catalog**.
+Our current Aurum prototype is:
+
+```text
+US Funds
+   ↓
+PostgreSQL Bronze
+```
+
+Google Automatic Data Quality is more naturally used like this:
+
+```text
+Data
+ ↓
+BigQuery / supported Google table
+ ↓
+Google DQ scan
+```
+
+So for our current PostgreSQL setup, there is an **extra step**.
 
 ## Aurum + US Funds flow
 
-For our current PostgreSQL-first Aurum, there is an extra step:
-
-~~~mermaid
+```mermaid
 flowchart TD
-  pg["Aurum PostgreSQL Bronze"] --> move["Make the data available\nas a supported Google table"]
-  move --> bq["BigQuery / supported catalog table"]
-  rules["Google DQ rules"] --> scan["Automatic DQ scan"]
+  files["A-Z US Funds price files"] --> pg["Aurum PostgreSQL Bronze"]
+  pg --> move["Make data available in a<br/>supported Google table"]
+  move --> bq["BigQuery / supported table"]
+  rules["Google DQ rules"] --> scan["Google Automatic DQ scan"]
   bq --> scan
-  scan --> result["Scan results"]
+  scan --> result["DQ scan results"]
   result --> policy{"Aurum policy"}
   policy -->|"Pass"| silver["Promote / continue"]
-  policy -->|"Fail"| hold["Hold / investigate"]
-~~~
+  policy -->|"Fail"| hold["Hold and investigate"]
+```
 
-### Why is there an extra step?
+## What happens in our example?
 
-Current Google automatic DQ is centered on **BigQuery** and supported catalog tables such as Iceberg REST Catalog tables.
+If `mutual_fund_prices` is available in BigQuery, Google can check things such as:
 
-Our current Aurum prototype is **PostgreSQL-first**.
+```text
+fund_symbol is not null
+price_date is not null
+price is in the valid range
+custom SQL checks for duplicates or relationships
+```
 
-So we should not draw this as if it were the normal current path:
+Google returns the scan result.
 
-~~~text
-PostgreSQL → Google DQ directly
-~~~
+Aurum then decides whether the load can continue.
 
-For the current US Funds setup, we would first need the data available in a supported Google table.
+## When would this make sense?
 
-## US Funds example
+Imagine an Aurum customer already stores everything in BigQuery.
 
-Suppose mutual_fund_prices is available in BigQuery.
+Then:
 
-A Google DQ scan could check:
+```text
+Customer BigQuery
+      ↓
+Google DQ
+      ↓
+Aurum
+```
 
-- fund_symbol is not null.
-- price_date is not null.
-- the agreed price rule.
-- custom SQL for more complex checks.
+This is a natural fit.
 
-Google also supports data profiling, which can calculate things such as null percentages, unique values and distributions. Profiling can help recommend quality rules.
+## Main catch for our current prototype
 
-## Why it could fit Aurum
+Our current Bronze data is in PostgreSQL, not BigQuery.
 
-It is useful if Aurum is deployed in a Google Cloud / BigQuery environment:
-
-~~~text
-Aurum client uses BigQuery
-        ↓
-Google DQ scans the table
-        ↓
-Aurum reads the result
-~~~
-
-Google manages the scan infrastructure, scheduling and monitoring.
-
-## Main catch for our current Aurum setup
-
-Our current Bronze target is PostgreSQL, not BigQuery.
-
-So using Google Automatic DQ **only for this PostgreSQL prototype** would introduce an extra data-platform step.
+So using Google DQ only for this prototype would add another data-platform step.
 
 ### Easy meeting line
 
-> "Google's service is simple if the client's data is already in BigQuery. For our current PostgreSQL US Funds setup, it is not the most direct fit because the DQ scan expects supported Google-side tables."
+> "Google DQ is simple when the client's data is already in BigQuery. For our current PostgreSQL US Funds setup, it needs an extra supported Google-side table, so it is not the most direct path."
+
+[Official references](sources.md#google-cloud-automatic-data-quality)
 
 ---
 
 # 3. Microsoft Purview Data Quality
 
-## Simple idea
+## Simple meaning
 
-**Microsoft Purview Data Quality combines data-quality checking with governance.**
+**Microsoft Purview Data Quality = Microsoft provides managed data-quality checks together with governance features.**
 
-It can profile supported data, attach quality rules, run scans, show results and notify teams about quality problems.
+It can help teams understand and manage things like:
 
-Think:
+```text
+what tables exist
+who owns them
+what columns they contain
+what quality rules apply
+what quality result was found
+```
 
-~~~text
-Understand the table
-        ↓
-Create quality rules
-        ↓
-Run quality scan
-        ↓
-See quality result
-        ↓
-Investigate problems
-~~~
+So Purview is broader than a simple DQ checker.
 
 ## Aurum + US Funds flow
 
-~~~mermaid
+```mermaid
 flowchart TD
-  bronze["Aurum Bronze data"] --> supported{"Is the data source supported\nfor Purview DQ?"}
+  bronze["Aurum Bronze data"] --> supported{"Is this source supported<br/>for Purview Data Quality?"}
   supported -->|"Yes"| profile["Profile the table"]
   profile --> rules["Add DQ rules"]
   rules --> scan["Run Purview DQ scan"]
-  scan --> result["Quality results / actions"]
+  scan --> result["Quality results"]
   result --> policy{"Aurum policy"}
   policy -->|"Pass"| silver["Promote / continue"]
-  policy -->|"Fail"| hold["Hold / investigate"]
-  supported -->|"No"| gap["Need a supported source\nor future support"]
-~~~
+  policy -->|"Fail"| hold["Hold and investigate"]
+  supported -->|"No"| gap["Need a supported DQ source"]
+```
 
-That first question is important for Aurum.
+That first question — **is the source supported for Purview Data Quality?** — matters a lot for Aurum.
 
-## Current PostgreSQL issue
+## The PostgreSQL point
 
-Microsoft Purview **Data Map** can connect to PostgreSQL for metadata and lineage.
+Microsoft Purview can connect to PostgreSQL for **metadata / Data Map** purposes.
 
-But that does **not** mean Purview's **Data Quality** feature can run DQ scans on PostgreSQL.
+That can help Purview understand that a table exists and what columns it has.
 
-In Microsoft's current supported-source list for Purview Data Quality, PostgreSQL is not listed as a supported DQ source. Supported DQ sources include Azure SQL Database, Azure SQL Managed Instance, Snowflake, Google BigQuery, Fabric and others.
+But:
 
-So for Aurum:
+> PostgreSQL support in Purview metadata does **not** automatically mean PostgreSQL is supported for Purview Data Quality scans.
 
-~~~text
-PostgreSQL metadata in Purview       → possible
-PostgreSQL Purview DQ scan directly  → not currently listed as supported
-~~~
+In the current Purview Data Quality supported-source list used by this research, PostgreSQL is not listed as a direct DQ source.
 
-This distinction is important.
+So for our current setup:
+
+```text
+PostgreSQL metadata in Purview
+        → possible
+
+Purview DQ directly on PostgreSQL
+        → not the direct supported path in this research
+```
 
 ## US Funds example
 
-If the US Funds table were in a supported source such as Azure SQL:
+If the US Funds tables were in a supported Purview DQ source, Purview could do:
 
-~~~text
+```text
 mutual_fund_prices
-        ↓
-Purview profiling
-        ↓
-Rules:
-- symbol completeness
-- date completeness
-- uniqueness
-- validity
-        ↓
-Purview DQ scan
-        ↓
-Result
-        ↓
+      ↓
+profile the table
+      ↓
+check completeness
+check uniqueness
+check validity
+check freshness
+      ↓
+DQ result
+      ↓
 Aurum policy
-~~~
+```
 
-Purview provides built-in quality dimensions such as completeness, consistency, conformity, accuracy, freshness and uniqueness.
+## When would this make sense?
 
-## Why it could fit Aurum later
+Imagine an Aurum customer already uses Azure and Purview for governance.
 
-Purview becomes interesting when the client needs both:
+Then Purview may already be their standard place for:
 
-- data quality, and
-- enterprise governance/catalog-style control.
+- catalog
+- ownership
+- governance
+- data quality
 
-For example, a large Azure-based client may already use Purview.
+Aurum could consume those DQ results instead of forcing a completely separate stack.
 
-Then Aurum could work alongside Purview results instead of building every management screen from scratch.
+## Main catch for our current prototype
 
-## Main catch for current Aurum
+For the PostgreSQL-first US Funds prototype, Purview Data Quality is not the direct path we would test first.
 
-For our **PostgreSQL-first US Funds prototype**, Purview Data Quality is not a direct DQ path today.
-
-Also, Purview is a larger governance platform, so adopting it only for a few simple checks would be heavy.
+It is also a larger governance platform, so adopting it only for a few checks would be heavy.
 
 ### Easy meeting line
 
-> "Purview is useful when the company already uses Microsoft's governance stack. It can manage profiling, quality rules and scans for supported sources. But PostgreSQL is currently supported for Purview metadata, not listed for Purview Data Quality scans, so it is not a direct fit for our current US Funds prototype."
+> "Purview is useful for Microsoft-heavy enterprise environments because it combines governance and DQ. For our current PostgreSQL US Funds prototype, PostgreSQL is useful for Purview metadata, but it is not the direct Purview DQ source path we are targeting."
+
+[Official references](sources.md#microsoft-purview-data-quality)
 
 ---
 
-# Compare the three
+# The easiest way to compare all three
 
-| Tool | Very simple meaning | Current PostgreSQL fit | Best Aurum situation | Main catch |
-|---|---|---|---|---|
-| AWS Glue Data Quality | AWS runs our DQ checks | **Direct route available through JDBC** | Aurum/client is on AWS or wants AWS-managed DQ | AWS setup, IAM, networking and cost |
-| Google Automatic Data Quality | Google runs DQ scans | **Not the direct current route** | Data is already in BigQuery / supported Google tables | Current Aurum data would need a supported Google-side table |
-| Microsoft Purview Data Quality | Microsoft runs DQ + governance scans | **PostgreSQL DQ not currently listed as supported** | Azure / Purview-heavy enterprise client | Larger platform and source-support limits |
+```mermaid
+flowchart TD
+  aurum["Aurum US Funds Bronze"] --> choice{"Where does the client's data live?"}
+
+  choice -->|"PostgreSQL / AWS-friendly"| aws["AWS Glue DQ<br/>direct JDBC route"]
+  choice -->|"BigQuery / GCP"| google["Google Automatic DQ"]
+  choice -->|"Supported Azure / Purview source"| ms["Microsoft Purview DQ"]
+
+  aws --> result["DQ result"]
+  google --> result
+  ms --> result
+
+  result --> policy{"Aurum policy"}
+  policy -->|"Pass"| silver["Silver"]
+  policy -->|"Fail"| hold["Hold"]
+```
+
+The quality question can be the same in every case.
+
+The main difference is **where the DQ engine runs and where the data already lives**.
 
 ---
 
 # One US Funds problem across all three
 
-Suppose the A-Z load produces:
+Suppose Bronze contains:
 
-~~~text
+```text
 NULL  | 2021-01-04 | 18.00
 ABCDX | 2021-01-04 | 25.40
 ABCDX | 2021-01-04 | 26.10
 XYZDX | 2021-01-05 | -3.00
-~~~
+```
 
-Aurum wants to know:
+Aurum asks:
 
-~~~text
-Is symbol missing?
+```text
+Is fund_symbol missing?
 Is fund_symbol + price_date repeated?
-Does price violate the agreed rule?
-~~~
+Does price break the agreed rule?
+```
 
-The actual quality question is the same.
+The tool choice changes the route:
 
-The difference is **where the checker runs**:
+```text
+AWS:
+PostgreSQL → AWS Glue DQ → result → Aurum
 
-~~~text
-AWS Glue
-PostgreSQL → AWS managed DQ → result → Aurum
+Google:
+PostgreSQL → supported Google table → Google DQ → result → Aurum
 
-Google Automatic DQ
-PostgreSQL → supported Google table → Google managed DQ → result → Aurum
+Microsoft:
+supported Purview DQ source → Purview DQ → result → Aurum
+```
 
-Microsoft Purview
-Supported Purview DQ source → Microsoft managed DQ → result → Aurum
-~~~
+The business question stays the same.
 
 ---
 
-# What should Aurum learn from Group 2?
+# Why Group 2 matters to Aurum
 
-Group 2 shows an important architecture idea:
+Aurum may eventually support customers on different cloud stacks.
 
-> Aurum does not have to build or host every data-quality engine itself.
+Example:
 
-For a client already committed to a cloud platform, Aurum could use that platform's DQ service and keep Aurum focused on:
+```text
+Customer A already uses AWS
+        → AWS Glue DQ may fit
 
-~~~text
+Customer B already uses BigQuery
+        → Google DQ may fit
+
+Customer C already uses Azure + Purview
+        → Purview DQ may fit
+```
+
+This means Aurum does not necessarily need to force every customer to use the same DQ engine.
+
+Aurum can stay focused on:
+
+```text
 orchestration
-+ promotion policy
-+ evidence
-+ cross-layer decisions
-+ reporting
-~~~
+promotion policy
+evidence
+reporting
+Bronze → Silver decision
+```
 
-For **our current PostgreSQL-first US Funds prototype**, the documentation-based fit is:
-
-1. **AWS Glue Data Quality** is the most direct of these three because AWS supports PostgreSQL through JDBC.
-2. **Google Automatic Data Quality** makes more sense when the data is already in BigQuery or another supported Google table.
-3. **Microsoft Purview Data Quality** makes more sense in a supported Azure/Purview environment; current Purview DQ documentation does not list PostgreSQL as a DQ source.
-
-This is an **architecture fit assessment**, not a benchmark or a claim that Aurum has already implemented these services.
+while using the customer's existing cloud DQ service where that makes sense.
 
 ---
 
-# What we should test if Group 2 gets a POC
+# Simple comparison
 
-Use the same US Funds rules and the same three test situations:
+| Tool | Very simple meaning | Fit with current PostgreSQL prototype | Best situation |
+|---|---|---|---|
+| AWS Glue Data Quality | AWS runs the DQ checks | **Direct route through JDBC** | AWS / PostgreSQL-friendly client |
+| Google Automatic Data Quality | Google runs DQ scans | Needs supported Google-side table | BigQuery / GCP client |
+| Microsoft Purview Data Quality | Microsoft runs DQ + governance | PostgreSQL is not the direct DQ path used here | Azure / Purview enterprise client |
 
-~~~text
+---
+
+# What Aurum should test first in Group 2
+
+For our **current PostgreSQL-first US Funds prototype**:
+
+### AWS Glue Data Quality
+
+This is the most direct Group 2 POC candidate because PostgreSQL can be reached through JDBC.
+
+### Google Automatic Data Quality
+
+Keep it as the GCP / BigQuery option.
+
+### Microsoft Purview Data Quality
+
+Keep it as the Microsoft / Purview option for supported DQ sources.
+
+This is an **architecture-fit conclusion**, not a benchmark saying one product is better than the others.
+
+---
+
+# If we run a Group 2 POC
+
+Use the same US Funds checks and the same three test situations:
+
+```text
 1. Clean load
 2. Bad load
-3. Cloud DQ job fails / cannot run
-~~~
+3. Cloud DQ job fails or cannot run
+```
 
-For every service, Aurum must distinguish:
+Aurum must always distinguish:
 
-~~~text
+```text
 PASS
 FAIL
 CHECK DID NOT RUN
-~~~
+```
 
-A cloud-service error must never be treated as a data-quality pass.
+A cloud-service error must **never** be treated as a DQ pass.
 
-Compare connection effort, rule coverage, failed-row evidence, runtime on representative data, source-database load, API/result integration with Aurum, cloud cost, and security/network setup.
+Compare:
 
-Start small before testing the 75.7M-row price table.
+- connection effort
+- rule coverage
+- failed-row evidence
+- runtime
+- source-database load
+- Aurum API/result integration
+- cloud cost
+- security and network setup
+
+Start with a smaller representative load before testing the full ~75.7M-row table.
 
 ---
 
 # Meeting-ready explanation
 
-> "Group 2 is the managed-cloud group. Instead of Aurum installing the DQ engine itself, AWS, Google or Microsoft runs the checks for us. We can use the same US Funds checks, like missing fund symbol, duplicate fund plus date and invalid prices. AWS Glue is the most direct with our current PostgreSQL setup because it supports JDBC. Google's automatic DQ is mainly for BigQuery and supported Google tables, so our current PostgreSQL data would need an extra step. Purview is strong for Microsoft governance and DQ, but current Purview DQ support does not list PostgreSQL. In every case, the cloud tool only gives the quality result; Aurum still decides whether the load can move from Bronze to Silver."
+> "Group 2 is the managed-cloud group. Instead of Aurum hosting the DQ engine, AWS, Google, or Microsoft runs the checks for us. We still use the same US Funds checks, like missing fund symbols, duplicate fund-plus-date records, and invalid prices. AWS Glue is the most direct for our current PostgreSQL setup because it has a JDBC path. Google's DQ is more natural when the data is already in BigQuery. Purview is more natural in Microsoft and Azure environments, but PostgreSQL is not the direct Purview DQ source path we are targeting. In every case, the cloud tool checks the data, while Aurum still decides whether Bronze can move to Silver."
