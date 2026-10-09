@@ -1,6 +1,6 @@
 # Sources
 
-[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md)
+[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md)
 
 Reviewed on 9 October 2026. Product behavior is described from official documentation. Aurum fit and the shortlists are engineering assessments.
 
@@ -86,6 +86,33 @@ Google documentation now uses the Knowledge Catalog name for capabilities previo
 
 Important distinction: PostgreSQL support in Purview Data Map does not mean PostgreSQL is supported by Purview Data Quality. The current Data Quality supported-source list does not include PostgreSQL.
 
+# Group 3 sources
+
+## Monte Carlo
+
+- [Postgres integration](https://docs.getmontecarlo.com/docs/postgres): current PostgreSQL monitor support, opt-in row-count freshness/volume checks, custom SQL and validation monitors, and the current lack of listed native PostgreSQL lineage support.
+
+The Group 3 guide treats Monte Carlo as a commercial observability platform, not as a drop-in replacement for Aurum's promotion policy.
+
+## Anomalo
+
+- [Data stack integrations](https://www.anomalo.com/integrations/): PostgreSQL is publicly listed as a supported integration.
+- [Data validation tools](https://www.anomalo.com/data-validation-tools/): automated checks, no-code and SQL validation rules, profiling, pipeline integration, and root-cause support.
+- [Automated anomaly detection](https://www.anomalo.com/anomaly-detection-software/): unsupervised anomaly detection, historical learning behavior, tuning, and the vendor's stated learning window.
+
+Detailed source-specific connector documentation is private to customers/pilots, so PostgreSQL-specific permissions, query behavior and exact feature coverage should be verified in a POC.
+
+## Bigeye
+
+- [Connect Postgres](https://docs.bigeye.com/docs/connect-postgresql): read-only PostgreSQL connection and profiling setup.
+- [Data source connections](https://docs.bigeye.com/docs/source-support): direct and agent-based connection models.
+- [Metrics](https://docs.bigeye.com/docs/metrics): metric-based anomaly monitoring.
+- [Custom rules](https://docs.bigeye.com/docs/custom-rules): SQL-based rules for business-specific checks.
+- [Lineage Plus](https://docs.bigeye.com/docs/lineage): column-level lineage capabilities and observability workflows.
+- [Impact Analysis](https://docs.bigeye.com/docs/impact-analysis): downstream impact analysis from lineage.
+
+Connector-specific lineage coverage should still be verified for the exact Aurum stack rather than assumed from Bigeye's general Lineage Plus capability.
+
 ## Validation scope
 
-This is documentation research. None of these DQ engines was benchmarked or connected to the Aurum runtime as part of this update.
+This is documentation research. None of these DQ or observability engines was benchmarked or connected to the Aurum runtime as part of this update.
