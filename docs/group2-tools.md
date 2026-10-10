@@ -79,7 +79,14 @@ Important: **`fund_symbol` alone is not unique in a price-history table.** One f
 
 Aurum does not need to host the DQ engine itself.
 
-For our current setup, the important point is that AWS Glue can connect to PostgreSQL through **JDBC**.
+For our current setup, AWS Glue has two different Data Quality routes that we should keep separate:
+
+1. **Data Catalog Data Quality** checks tables registered in the AWS Glue Data Catalog.
+2. **ETL job Data Quality** runs DQ inside an AWS Glue ETL job while data is flowing through that job.
+
+For the Data Catalog route, JDBC is listed as supported when AWS Lake Formation is disabled. However, the same supported-source table lists **Amazon RDS and Aurora** as not supported in that Lake Formation disabled column.
+
+So if Aurum PostgreSQL is running on Amazon RDS or Aurora, we should check the exact Data Catalog connection route before assuming it will work.
 
 JDBC simply means a standard database connection.
 
@@ -127,23 +134,45 @@ The important point is:
 
 > **AWS detects the problem. Aurum decides what to do with it.**
 
-## Why it fits our current Aurum setup
+## Data Catalog route versus ETL job route
 
-Our prototype is PostgreSQL-first.
+### Data Catalog route
 
-So the path can be:
+This route evaluates tables that are already registered in the AWS Glue Data Catalog.
+
+For this route, the supported-source table says:
 
 ```text
-Aurum PostgreSQL
-      ↓
-AWS Glue through JDBC
-      ↓
-DQ result
-      ↓
-Aurum
+JDBC
+Lake Formation disabled
+Supported
 ```
 
-That is why AWS Glue is the most direct Group 2 option for the current prototype.
+But it separately says:
+
+```text
+Amazon RDS and Aurora
+Lake Formation disabled
+Not Supported
+```
+
+That distinction matters for Aurum. If our PostgreSQL database is hosted on RDS or Aurora, we should verify the exact supported route before choosing the Data Catalog option.
+
+### ETL job route
+
+This is a different path.
+
+AWS Glue Data Quality can run inside an AWS Glue ETL job against data that the job has already read. AWS documents this route separately from Data Catalog Data Quality, and it supports the data sources available to Glue ETL jobs.
+
+For Aurum, this means we should first decide whether we are:
+
+```text
+checking a cataloged table
+or
+running DQ inside a Glue ETL job
+```
+
+before we design the PostgreSQL integration.
 
 ## Main catch
 
@@ -162,7 +191,7 @@ cloud cost
 
 ### Easy meeting line
 
-> "AWS Glue can connect to our PostgreSQL Bronze data through JDBC, run DQ checks on the US Funds table, and return the result. Aurum still decides whether the load moves to Silver."
+> "AWS Glue has two DQ routes. The Data Catalog route supports JDBC when Lake Formation is disabled, but its source table separately marks Amazon RDS and Aurora as not supported in that case. The ETL job route is separate and runs DQ inside a Glue job. So for Aurum PostgreSQL, especially on RDS or Aurora, we should confirm the exact route first."
 
 [Official references](sources.md#aws-glue-data-quality)
 
@@ -461,7 +490,7 @@ while using the customer's existing cloud DQ service where that makes sense.
 
 | Tool | Very simple meaning | Fit with current PostgreSQL prototype | Best situation |
 |---|---|---|---|
-| AWS Glue Data Quality | AWS runs the DQ checks | **Direct route through JDBC** | AWS / PostgreSQL-friendly client |
+| AWS Glue Data Quality | AWS runs the DQ checks | JDBC is supported in the Data Catalog route when Lake Formation is disabled, but RDS and Aurora have a separate support caveat | AWS / PostgreSQL-friendly client |
 | Google Automatic Data Quality | Google runs DQ scans | Needs supported Google-side table | BigQuery / GCP client |
 | Microsoft Purview Data Quality | Microsoft runs DQ + governance | PostgreSQL is not the direct DQ path used here | Azure / Purview enterprise client |
 
@@ -473,7 +502,7 @@ For our **current PostgreSQL-first US Funds prototype**:
 
 ### AWS Glue Data Quality
 
-This is the most direct Group 2 POC candidate because PostgreSQL can be reached through JDBC.
+This is still the Group 2 service to investigate first for PostgreSQL, but the route must be checked carefully. Data Catalog DQ supports JDBC when Lake Formation is disabled, while Amazon RDS and Aurora are separately listed as not supported in that same source table. The ETL job route is separate.
 
 ### Google Automatic Data Quality
 
@@ -524,4 +553,4 @@ Start with a smaller representative load before testing the full ~75.7M-row tabl
 
 # Meeting-ready explanation
 
-> "Group 2 is the managed-cloud group. Instead of Aurum hosting the DQ engine, AWS, Google, or Microsoft runs the checks for us. We still use the same US Funds checks, like missing fund symbols, duplicate fund-plus-date records, and invalid prices. AWS Glue is the most direct for our current PostgreSQL setup because it has a JDBC path. Google's DQ is more natural when the data is already in BigQuery. Purview is more natural in Microsoft and Azure environments, but PostgreSQL is not the direct Purview DQ source path we are targeting. In every case, the cloud tool checks the data, while Aurum still decides whether Bronze can move to Silver."
+> "Group 2 is the managed-cloud group. Instead of Aurum hosting the DQ engine, AWS, Google, or Microsoft runs the checks for us. We still use the same US Funds checks, like missing fund symbols, duplicate fund-plus-date records, and invalid prices. For AWS Glue, we must first choose between the Data Catalog route and the ETL job route. JDBC is supported in the Data Catalog route when Lake Formation is disabled, but Amazon RDS and Aurora have a separate support caveat. Google's DQ is more natural when the data is already in BigQuery. Purview is more natural in Microsoft and Azure environments, but PostgreSQL is not the direct Purview DQ source path we are targeting. In every case, the cloud tool checks the data, while Aurum still decides whether Bronze can move to Silver."
