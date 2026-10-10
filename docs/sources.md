@@ -1,8 +1,8 @@
 # Sources
 
-[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md)
+[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md) · [Group 4 guide](group4-tools.md)
 
-Reviewed on 9 October 2026. Product behavior is described from official documentation. Aurum fit and the shortlists are engineering assessments.
+Reviewed on 10 October 2026. Product behavior is described from official documentation. Aurum fit and the shortlists are engineering assessments.
 
 ## Input context
 
@@ -113,6 +113,41 @@ Detailed source-specific connector documentation is private to customers/pilots,
 - [Impact Analysis](https://docs.bigeye.com/docs/impact-analysis): downstream impact analysis from lineage.
 
 For Aurum, PostgreSQL lineage should be confirmed in a POC because PostgreSQL is not among the database lineage connectors listed on the Lineage Plus documentation.
+
+# Group 4 sources
+
+## Informatica Data Quality
+
+- [Run data quality rules on assets](https://onlinehelp.informatica.com/IICS/prod/DGC/en/cloud-data-governance-and-catalog-working-with-assets/Run_data_quality_rules_on_assets.html): rule templates, glossary linkage, rule occurrences, score bands, daily/weekly/monthly schedules, Metadata Command Center Data Quality enablement, and the listed technical sources. PostgreSQL is not named on this page; JDBC is the generic entry.
+- [Informatica pricing](https://www.informatica.com/pricing.html?isappinstalled=0): consumption-based pricing for Informatica Intelligent Data Management Cloud.
+
+For Aurum, PostgreSQL support should be confirmed with Informatica in a POC before treating this as a direct PostgreSQL route.
+
+## Talend Data Quality from Qlik
+
+- [Qlik completes acquisition of Talend](https://www.qlik.com/us/news/company/press-room/press-releases/qlik-acquires-talend): Qlik announced completion of the Talend acquisition in May 2023.
+- [Talend PostgreSQL components](https://help.qlik.com/talend/r/en-US/8.0/components/postgresql/postgresql-component): PostgreSQL components including tPostgresqlInput, tPostgresqlValidRows, and tPostgresqlInvalidRows.
+- [tPostgresqlValidRows](https://help.qlik.com/talend/en-US/components/8.0/postgresql/tpostgresqlvalidrows): row checks against regular-expression patterns or DQ rules, optional WHERE clause, Feature Manager installation, and listed Talend editions.
+- [Talend Trust Score](https://help.qlik.com/talend/en-US/data-preparation-user-guide/Cloud/talend-trust-score): Talend Cloud Trust Score from 0 to 5.
+- [tMatchGroup](https://help.qlik.com/talend/en-US/components/8.0/data-matching/tmatchgroup): matching/grouping component and Feature Manager installation.
+
+## Collibra Data Quality and Observability
+
+- [Classic PostgreSQL connection](https://productresources.collibra.com/docs/collibra/latest/Content/DataQuality/DBConnection/ref_postgresql.htm): driver class org.postgresql.Driver, default port 5432, listed driver version 42.5.1, read access, ROLE_ADMIN, no pushdown, Spark/Yarn/Parallel JDBC processing, and JDK 8 and 11.
+- [Cloud supported data sources](https://productresources.collibra.com/docs/collibra/2026.08/Content/UnifiedDataQuality/DataSources/ref_data-quality-supported-data-sources.htm): PostgreSQL listed as a JDBC source using Pullup processing with driver 25.0.9543; no PostgreSQL pushdown is shown.
+- [Compatibility matrix](https://productresources.collibra.com/docs/collibra/2026.08/Content/UnifiedDataQuality/ref_dq-compatibilities.htm): PostgreSQL driver versions vary by Collibra Platform release.
+- [Data quality scores](https://productresources.collibra.com/docs/collibra/latest/Content/UnifiedDataQuality/co_about-data-quality-scores.htm): 90 to 100 pass, 76 to 89 warning, 0 to 75 fail.
+
+Classic and Cloud are separate apps with separate documentation, so the Aurum design should name the intended app and pin the release.
+
+## Ataccama ONE
+
+- [Supported connectors](https://docs.ataccama.com/ataccama-one-agentic/latest/data-processing/supported-connectors.html): PostgreSQL username/password connection, support for catalog/data processing and Edge processing, no PostgreSQL lineage support, and pushdown listed only for Snowflake and Databricks.
+- [Data observability](https://docs.ataccama.com/one/latest/data-observability/data-observability.html): monitoring of DQ results, volume/statistical anomalies, schema changes, and freshness; PostgreSQL freshness setup requires track_commit_timestamp = on and a database restart; at least sample profiling is required before observability configuration.
+- [Run DQ Evaluation](https://docs.ataccama.com/one/latest/data-quality/run-dq-evaluation.html): DQ evaluation and mapping rules to governed data context.
+- [Rule types](https://docs.ataccama.com/one/latest/data-quality/rules.html): DQ rule definitions and rule mapping.
+
+A glossary can help with governed rule mapping, but rules can also be mapped directly to attributes.
 
 ## Validation scope
 
