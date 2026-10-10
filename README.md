@@ -9,7 +9,8 @@ Simple explanations of data-quality tools using the Aurum platform.
 3. [Group 2 tools](docs/group2-tools.md): cloud-managed DQ services explained using the US Funds dataset.
 4. [Group 3 tools](docs/group3-tools.md): commercial data-observability platforms explained using the US Funds dataset.
 5. [Group 4 tools](docs/group4-tools.md): commercial enterprise suites explained using the US Funds dataset.
-6. [Sources](docs/sources.md): official documentation and version notes.
+6. [Panel deck](docs/aurum-data-quality-tools-panel-deck.html): presentation-ready summary of all 16 tools and the Aurum recommendation.
+7. [Sources](docs/sources.md): official documentation and version notes.
 
 ## Original research scope
 
