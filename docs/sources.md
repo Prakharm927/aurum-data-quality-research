@@ -6,7 +6,7 @@ Reviewed on 9 October 2026. Product behavior is described from official document
 
 ## Input context
 
-- User-provided comparison workbook: Data_Quality_Tools_Comparisons.xlsx, especially the Comparison and How It Works sheets.
+- User-provided comparison workbook: Data_Quality_Tools_Comparison.xlsx, especially the Comparison and How It Works sheets.
 - User-provided Aurum project context: PostgreSQL-oriented Bronze, Silver and Gold design, and the completed US Funds scan.
 - The earlier scan reported 23,783 mutual-fund metadata rows, 75,657,739 mutual-fund price rows, 2,310 ETF metadata rows and 3,866,030 ETF price rows.
 - Example rows, later reload sizes, Bronze schema name and the price alias are illustrative. Candidate rules require the dataset owner's agreement.
@@ -65,10 +65,11 @@ Lineage completeness depends on ingestion configuration and available query or p
 
 ## AWS Glue Data Quality
 
-- [AWS Glue Data Quality overview](https://docs.aws.amazon.com/glue/latest/dg/glue-data-quality.html): Data Catalog and ETL-job DQ features, results, anomaly support and supported source categories.
+- [AWS Glue Data Quality overview](https://docs.aws.amazon.com/glue/latest/dg/glue-data-quality.html): AWS documents two entry points, Data Catalog Data Quality and ETL job Data Quality.
 - [DQDL reference](https://docs.aws.amazon.com/glue/latest/dg/dqdl.html): AWS Data Quality Definition Language.
-- [Data Catalog DQ getting started and supported source types](https://docs.aws.amazon.com/glue/latest/dg/data-quality-getting-started.html): JDBC support and source limitations.
-- [AWS Glue JDBC connections](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-connect-jdbc-home.html): native PostgreSQL JDBC connection support.
+- [Data Catalog DQ getting started and supported source types](https://docs.aws.amazon.com/glue/latest/dg/data-quality-getting-started.html): when Lake Formation is disabled, JDBC is listed as Supported while Amazon RDS and Aurora are separately listed as Not Supported.
+- [AWS Glue ETL job Data Quality tutorial](https://docs.aws.amazon.com/glue/latest/dg/tutorial-data-quality.html): DQ can run inside a Glue ETL job against data flowing through the job.
+- [AWS Glue JDBC connections](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-connect-jdbc-home.html): PostgreSQL JDBC connection support for AWS Glue.
 
 ## Google Cloud automatic data quality
 
@@ -90,7 +91,7 @@ Important distinction: PostgreSQL support in Purview Data Map does not mean Post
 
 ## Monte Carlo
 
-- [Postgres integration](https://docs.getmontecarlo.com/docs/postgres): current PostgreSQL monitor support, opt-in row-count freshness/volume checks, custom SQL and validation monitors, and the current lack of listed native PostgreSQL lineage support.
+- [Postgres integration](https://docs.getmontecarlo.com/docs/postgres): default volume monitoring uses hourly table metadata. Opt-in freshness and volume row-count monitors run count(*) queries for each selected table. The support table does not mark PostgreSQL lineage as supported.
 
 The Group 3 guide treats Monte Carlo as a commercial observability platform, not as a drop-in replacement for Aurum's promotion policy.
 
@@ -98,7 +99,7 @@ The Group 3 guide treats Monte Carlo as a commercial observability platform, not
 
 - [Data stack integrations](https://www.anomalo.com/integrations/): PostgreSQL is publicly listed as a supported integration.
 - [Data validation tools](https://www.anomalo.com/data-validation-tools/): automated checks, no-code and SQL validation rules, profiling, pipeline integration, and root-cause support.
-- [Automated anomaly detection](https://www.anomalo.com/anomaly-detection-software/): unsupervised anomaly detection, historical learning behavior, tuning, and the vendor's stated learning window.
+- [Automated anomaly detection](https://www.anomalo.com/anomaly-detection-software/): Anomalo says its algorithms need about 2 weeks to produce useful results, continue improving for roughly 30 to 60 days, and work best when a table has at least 100 rows per day.
 
 Detailed source-specific connector documentation is private to customers/pilots, so PostgreSQL-specific permissions, query behavior and exact feature coverage should be verified in a POC.
 
@@ -108,10 +109,10 @@ Detailed source-specific connector documentation is private to customers/pilots,
 - [Data source connections](https://docs.bigeye.com/docs/source-support): direct and agent-based connection models.
 - [Metrics](https://docs.bigeye.com/docs/metrics): metric-based anomaly monitoring.
 - [Custom rules](https://docs.bigeye.com/docs/custom-rules): SQL-based rules for business-specific checks.
-- [Lineage Plus](https://docs.bigeye.com/docs/lineage): column-level lineage capabilities and observability workflows.
+- [Lineage Plus](https://docs.bigeye.com/docs/lineage): column-level lineage capabilities and the documented lineage connector list. PostgreSQL is not among the listed database lineage connectors.
 - [Impact Analysis](https://docs.bigeye.com/docs/impact-analysis): downstream impact analysis from lineage.
 
-Connector-specific lineage coverage should still be verified for the exact Aurum stack rather than assumed from Bigeye's general Lineage Plus capability.
+For Aurum, PostgreSQL lineage should be confirmed in a POC because PostgreSQL is not among the database lineage connectors listed on the Lineage Plus documentation.
 
 ## Validation scope
 
