@@ -1,6 +1,6 @@
 # Group 3 tools for Aurum
 
-[Home](../README.md) · [Aurum diagrams](diagrams.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Sources](sources.md)
+[Home](../README.md) · [Aurum diagrams](diagrams.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 4 guide](group4-tools.md) · [Sources](sources.md)
 
 ## What Group 3 means
 
