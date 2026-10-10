@@ -119,13 +119,14 @@ For Aurum, PostgreSQL lineage should be confirmed in a POC because PostgreSQL is
 ## Informatica Data Quality
 
 - [Run data quality rules on assets](https://onlinehelp.informatica.com/IICS/prod/DGC/en/cloud-data-governance-and-catalog-working-with-assets/Run_data_quality_rules_on_assets.html): rule templates, glossary linkage, rule occurrences, score bands, daily/weekly/monthly schedules, Metadata Command Center Data Quality enablement, and the listed technical sources. PostgreSQL is not named on this page; JDBC is the generic entry.
-- [Informatica pricing](https://www.informatica.com/pricing.html?isappinstalled=0): consumption-based pricing for Informatica Intelligent Data Management Cloud.
+- [Informatica pricing](https://www.informatica.com/pricing): consumption-based pricing for Informatica Intelligent Data Management Cloud.
 
 For Aurum, PostgreSQL support should be confirmed with Informatica in a POC before treating this as a direct PostgreSQL route.
 
 ## Talend Data Quality from Qlik
 
-- [Qlik completes acquisition of Talend](https://www.qlik.com/us/news/company/press-room/press-releases/qlik-acquires-talend): Qlik announced completion of the Talend acquisition in May 2023.
+- [Qlik completes acquisition of Talend](https://www.qlik.com/us/news/company/press-room/press-releases/qlik-acquires-talend): Qlik's completion announcement.
+- [BigDATAwire, 16 May 2023](https://bigdatawire.com/2023/05/16/qlik-completes-acquisition-talend): dated confirmation that Qlik completed the Talend acquisition in May 2023.
 - [Talend PostgreSQL components](https://help.qlik.com/talend/r/en-US/8.0/components/postgresql/postgresql-component): PostgreSQL components including tPostgresqlInput, tPostgresqlValidRows, and tPostgresqlInvalidRows.
 - [tPostgresqlValidRows](https://help.qlik.com/talend/en-US/components/8.0/postgresql/tpostgresqlvalidrows): row checks against regular-expression patterns or DQ rules, optional WHERE clause, Feature Manager installation, and listed Talend editions.
 - [Talend Trust Score](https://help.qlik.com/talend/en-US/data-preparation-user-guide/Cloud/talend-trust-score): Talend Cloud Trust Score from 0 to 5.
@@ -144,6 +145,7 @@ Classic and Cloud are separate apps with separate documentation, so the Aurum de
 
 - [Supported connectors](https://docs.ataccama.com/ataccama-one-agentic/latest/data-processing/supported-connectors.html): PostgreSQL username/password connection, support for catalog/data processing and Edge processing, no PostgreSQL lineage support, and pushdown listed only for Snowflake and Databricks.
 - [Data observability](https://docs.ataccama.com/one/latest/data-observability/data-observability.html): monitoring of DQ results, volume/statistical anomalies, schema changes, and freshness; PostgreSQL freshness setup requires track_commit_timestamp = on and a database restart; at least sample profiling is required before observability configuration.
+- [Data quality overview](https://docs.ataccama.com/one/latest/data-quality/data-quality-overview.html): DQ rules are mapped to terms or applied directly to attributes, and the overall DQ result is the share of records that passed all applied rules.
 - [Run DQ Evaluation](https://docs.ataccama.com/one/latest/data-quality/run-dq-evaluation.html): DQ evaluation and mapping rules to governed data context.
 - [Rule types](https://docs.ataccama.com/one/latest/data-quality/rules.html): DQ rule definitions and rule mapping.
 
