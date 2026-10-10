@@ -46,7 +46,7 @@ See [Group 1 tools](group1-tools.md).
 ```mermaid
 flowchart TD
   aurum["Aurum US Funds Bronze"] --> choice{"Where does the client's data live?"}
-  choice -->|"PostgreSQL / AWS-friendly"| aws["AWS Glue Data Quality<br/>JDBC route"]
+  choice -->|"PostgreSQL / AWS-friendly"| aws["AWS Glue Data Quality<br/>Data Catalog or ETL job route"]
   choice -->|"BigQuery / GCP"| google["Google Automatic Data Quality"]
   choice -->|"Supported Azure / Purview source"| ms["Microsoft Purview Data Quality"]
 
@@ -61,7 +61,7 @@ flowchart TD
 
 The simplest difference is:
 
-- **AWS Glue Data Quality**: most direct Group 2 path for the current PostgreSQL-first prototype because of JDBC.
+- **AWS Glue Data Quality**: first Group 2 service to investigate for PostgreSQL, after choosing between the Data Catalog route and the ETL job route.
 - **Google Automatic Data Quality**: natural when data is already in BigQuery or another supported Google-side table.
 - **Microsoft Purview Data Quality**: natural for Microsoft/Azure environments using supported Purview DQ sources.
 
@@ -162,7 +162,7 @@ One fund appears on many dates, so `fund_symbol` alone must not be treated as un
 
 | Diagram | What to notice |
 |---|---|
-| AWS Glue DQ | PostgreSQL can connect through JDBC before AWS runs the checks |
+| AWS Glue DQ | Choose the Data Catalog or ETL job route first. JDBC is supported in the Data Catalog route when Lake Formation is disabled |
 | Google Automatic DQ | Current PostgreSQL data needs to be available in a supported Google table |
 | Microsoft Purview DQ | First confirm that the source is supported for Purview Data Quality |
 
