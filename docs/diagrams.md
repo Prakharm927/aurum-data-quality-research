@@ -1,6 +1,6 @@
 # Aurum diagrams
 
-[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md) · [Sources](sources.md)
+[Home](../README.md) · [Group 1 guide](group1-tools.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md) · [Group 4 guide](group4-tools.md) · [Sources](sources.md)
 
 ## 1. The proposed Aurum quality flow
 
@@ -113,7 +113,33 @@ See [Group 3 tools](group3-tools.md).
 
 ---
 
-## 5. US Funds example used across the groups
+## 5. Group 4: commercial enterprise suites
+
+```mermaid
+flowchart TD
+  aurum["Aurum PostgreSQL and US Funds"] --> client{"Does the client already use an enterprise platform?"}
+  client -->|"Informatica"| inf["Informatica Data Quality"]
+  client -->|"Talend / Qlik"| talend["Talend Data Quality"]
+  client -->|"Collibra"| collibra["Collibra DQ & Observability"]
+  client -->|"Ataccama"| ataccama["Ataccama ONE"]
+
+  inf --> result["Enterprise DQ result"]
+  talend --> result
+  collibra --> result
+  ataccama --> result
+
+  result --> policy["Aurum policy and response"]
+```
+
+Group 4 tools are larger commercial platforms. They combine data quality with wider enterprise capabilities such as governance, catalog, ETL, observability, matching, or master-data features depending on the product.
+
+For the current PostgreSQL-first prototype, Group 4 is not the first POC. Soda and GX remain the first validation candidates. Group 4 is more relevant when a client already owns one of these platforms.
+
+See [Group 4 tools](group4-tools.md).
+
+---
+
+## 6. US Funds example used across the groups
 
 The research uses the same current Aurum dataset so the tools are easy to compare:
 
@@ -145,7 +171,7 @@ One fund appears on many dates, so `fund_symbol` alone must not be treated as un
 
 ---
 
-## 6. How to read the per-tool diagrams
+## 7. How to read the per-tool diagrams
 
 ### Group 1
 
@@ -173,5 +199,14 @@ One fund appears on many dates, so `fund_symbol` alone must not be treated as un
 | Monte Carlo | PostgreSQL monitors compare current behavior with expected behavior; Postgres lineage is not listed in the current connector support |
 | Anomalo | Historical patterns and explicit rules both feed monitoring |
 | Bigeye | Profiling produces metrics/rules, which feed incidents and lineage-aware investigation |
+
+### Group 4
+
+| Diagram | What to notice |
+|---|---|
+| Informatica | DQ rules sit inside a wider governance and catalog flow; PostgreSQL support should be confirmed in a POC |
+| Talend | PostgreSQL DQ is built into Talend Studio ETL jobs |
+| Collibra | First identify Classic or Cloud, then use the matching PostgreSQL connection model |
+| Ataccama | PostgreSQL supports catalog/data processing and observability, with connector-specific lineage and pushdown limits |
 
 All diagrams describe proposed integrations. They are alternatives or complementary pieces, not tools that all need to be deployed together.
