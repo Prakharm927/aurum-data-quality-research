@@ -185,23 +185,25 @@ Monte Carlo also supports validation and custom SQL monitors. Observability does
 
 Monte Carlo has a documented PostgreSQL integration.
 
-Its current PostgreSQL documentation lists support for:
+Its current PostgreSQL documentation says:
 
-- freshness through opt-in row counts
-- volume through opt-in row counts
-- schema changes
-- metric monitors
-- comparison monitors
-- custom SQL
-- validation monitors
+- the normal volume monitor is active by default and uses table metadata collected each hour
+- freshness can use an opt-in row count for each table
+- volume can also use an opt-in row count for each table
+- schema-change monitors are supported
+- metric monitors are supported
+- comparison monitors are supported
+- custom SQL and validation monitors are supported
+
+The opt-in row-count freshness and volume monitors are the ones that explicitly run `count(*)` queries against each selected table. The default volume monitor described above uses hourly table metadata.
+
+For Aurum's ~75.7M-row price table, we should measure the database load before enabling row-count monitoring broadly.
 
 One important limitation:
 
-> The current PostgreSQL integration page does **not** list native PostgreSQL lineage support.
+> Lineage is not marked as supported for PostgreSQL on the current Monte Carlo Postgres support table.
 
-So we should not say that simply connecting Aurum PostgreSQL automatically gives us full lineage.
-
-Also, opt-in freshness/volume monitoring can run `count(*)` queries. For the ~75.7M-row price table, database load should be measured in a POC.
+So we should not say that connecting Aurum PostgreSQL automatically gives us Monte Carlo lineage.
 
 ## Why it could help Aurum
 
@@ -221,7 +223,7 @@ It is a broad commercial platform. For the current prototype, we need to prove t
 
 ### Easy meeting line
 
-> "Monte Carlo is more of a continuous data-health monitor than only a rule checker. For our US Funds table it could detect unusual volume or freshness changes and also run custom validation rules. It supports PostgreSQL monitoring, but the current PostgreSQL docs do not show native lineage support, so we should not assume full lineage from that connection."
+> "Monte Carlo is more of a continuous data-health monitor than only a rule checker. For our US Funds table it could detect unusual volume or freshness changes and also run custom validation rules. Its default volume monitor uses hourly metadata. The optional row-count freshness and volume monitors run count(*) queries on the table. Lineage is not marked as supported for PostgreSQL."
 
 [Official references](sources.md#monte-carlo)
 
@@ -298,9 +300,13 @@ So Anomalo is not only anomaly detection.
 
 Learned anomaly detection needs history.
 
-The public product material says the models learn historical behavior and improve as more history becomes available.
+The official anomaly-detection page gives a more specific learning window:
 
-For Aurum this matters because our completed US Funds scan is one historical analysis. We should not pretend that one completed run is enough to benchmark learned anomaly detection properly.
+- the algorithms need about 2 weeks of runs to produce useful results
+- results keep improving for roughly 30 to 60 days after that
+- the table should have at least 100 rows per day for the anomaly algorithm to be effective
+
+For Aurum, a daily-run Anomalo POC needs this much history. Our completed US Funds scan is one historical analysis, so one completed run is not enough to test learned anomaly detection properly.
 
 ## PostgreSQL point for Aurum
 
@@ -336,7 +342,7 @@ deeper anomaly checks + important explicit rules
 
 ## Main catch
 
-It is a commercial platform with a larger footprint than a lightweight validation library. Historical anomaly detection also needs comparable runs, and detailed PostgreSQL behavior needs a pilot because public connector documentation is limited.
+It is a commercial platform with a larger footprint than a lightweight validation library. A daily anomaly POC also needs time to learn: about 2 weeks for useful results, with improvement continuing for roughly 30 to 60 days, and the monitored table should have at least 100 rows per day. Detailed PostgreSQL behavior still needs a pilot because public connector documentation is limited.
 
 ### Easy meeting line
 
@@ -431,7 +437,7 @@ The agent option matters when an enterprise does not want a SaaS service connect
 
 Bigeye has a broader Lineage Plus capability. It uses lineage for upstream monitoring, impact analysis, root-cause investigation, and incident context.
 
-But connector-specific lineage coverage should still be confirmed for the exact Aurum stack. We should not assume every PostgreSQL → Silver → Gold relationship appears automatically.
+Its lineage documentation lists database lineage connectors for SQL Server, Snowflake, Databricks, Oracle, IBM DB2 z/OS, and IBM Netezza. PostgreSQL is not among the listed lineage database connectors, so confirm it in a POC.
 
 ## Why it could help Aurum
 
@@ -453,7 +459,7 @@ It is much broader than a simple Bronze-to-Silver rule engine. Profiling and met
 
 ### Easy meeting line
 
-> "Bigeye tracks health metrics such as row count or null percentage over time and alerts when they behave abnormally. It supports PostgreSQL directly, can profile the US Funds tables, and also supports custom rules and lineage-aware investigation. For Aurum we would still benchmark source-database load and verify exactly how much lineage it can discover from our stack."
+> "Bigeye tracks health metrics such as row count or null percentage over time and alerts when they behave abnormally. It supports PostgreSQL for monitoring and can profile the US Funds tables. PostgreSQL is not among Bigeye's listed database lineage connectors, so we would confirm PostgreSQL lineage separately in a POC."
 
 [Official references](sources.md#bigeye)
 
@@ -591,9 +597,9 @@ For Aurum, important deterministic rules should remain explicit even if an obser
 
 | Tool | Simple meaning | PostgreSQL relevance for Aurum | Important caution |
 |---|---|---|---|
-| **Monte Carlo** | Watches data health and anomalies, with incident context | Direct PostgreSQL monitoring is documented | Current Postgres docs do not list native lineage; opt-in row counts can query large tables |
-| **Anomalo** | Learns normal patterns and finds unexpected changes; also supports rules | PostgreSQL is publicly listed as an integration | Detailed connector docs are private; exact PostgreSQL behavior needs a pilot |
-| **Bigeye** | Tracks health metrics, rules and anomalies with lineage/incident context | Direct PostgreSQL connection is documented | Benchmark monitoring load and verify exact lineage coverage |
+| **Monte Carlo** | Watches data health and anomalies, with incident context | Direct PostgreSQL monitoring is documented | Default volume uses hourly metadata; opt-in row-count freshness and volume run `count(*)`; lineage is not marked supported |
+| **Anomalo** | Learns normal patterns and finds unexpected changes; also supports rules | PostgreSQL is publicly listed as an integration | Useful anomaly results need about 2 weeks of runs, improve for 30 to 60 days, and need at least 100 rows per day |
+| **Bigeye** | Tracks health metrics, rules and anomalies with lineage/incident context | Direct PostgreSQL monitoring connection is documented | PostgreSQL is not among the listed database lineage connectors, so confirm it in a POC |
 
 ---
 
@@ -711,9 +717,9 @@ All three are **commercial observability platforms**, not lightweight libraries.
 
 For our PostgreSQL-first prototype:
 
-- **Monte Carlo** has documented PostgreSQL monitoring and strong observability features, but current PostgreSQL docs do not list native lineage.
-- **Anomalo** publicly lists PostgreSQL and emphasizes automatic value-level anomaly detection plus explicit rules, but connector-level public documentation is limited.
-- **Bigeye** has explicit PostgreSQL setup documentation, profiling/metric monitoring, custom rules, and broader lineage/incident capabilities.
+- **Monte Carlo** has documented PostgreSQL monitoring. Its default volume monitor uses hourly metadata, while opt-in row-count freshness and volume monitors run `count(*)`. Lineage is not marked as supported for PostgreSQL.
+- **Anomalo** publicly lists PostgreSQL and emphasizes automatic value-level anomaly detection plus explicit rules. Its anomaly models need about 2 weeks for useful results and keep improving for roughly 30 to 60 days.
+- **Bigeye** has explicit PostgreSQL monitoring setup documentation, profiling, metric monitoring, and custom rules. PostgreSQL is not among its listed database lineage connectors, so confirm lineage in a POC.
 
 The responsible next step, if Group 3 becomes important, is a **small commercial POC**, not choosing a winner from documentation alone.
 
