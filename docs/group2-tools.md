@@ -398,7 +398,7 @@ It is also a larger governance platform, so adopting it only for a few checks wo
 flowchart TD
   aurum["Aurum US Funds Bronze"] --> choice{"Where does the client's data live?"}
 
-  choice -->|"PostgreSQL / AWS-friendly"| aws["AWS Glue DQ<br/>direct JDBC route"]
+  choice -->|"PostgreSQL / AWS-friendly"| aws["AWS Glue DQ<br/>Data Catalog or ETL job route"]
   choice -->|"BigQuery / GCP"| google["Google Automatic DQ"]
   choice -->|"Supported Azure / Purview source"| ms["Microsoft Purview DQ"]
 
