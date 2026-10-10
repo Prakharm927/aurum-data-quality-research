@@ -1,6 +1,6 @@
 # Group 1 tools for Aurum
 
-[Home](../README.md) · [Aurum diagrams](diagrams.md) · [Sources](sources.md)
+[Home](../README.md) · [Aurum diagrams](diagrams.md) · [Group 2 guide](group2-tools.md) · [Group 3 guide](group3-tools.md) · [Group 4 guide](group4-tools.md) · [Sources](sources.md)
 
 ## The shared Aurum example
 
