@@ -36,7 +36,7 @@ Groups 1-3 are now documented in this repository. Group 4 remains to be written.
 
 | Tool | Main use in Aurum |
 |---|---|
-| AWS Glue Data Quality | AWS-managed DQ with a direct PostgreSQL JDBC route |
+| AWS Glue Data Quality | AWS-managed DQ with a Data Catalog route and an ETL job route. Check the route for Postgres first. |
 | Google Automatic Data Quality | Managed DQ scans for BigQuery and supported Google-side tables |
 | Microsoft Purview Data Quality | Managed DQ plus governance for supported Purview sources |
 
@@ -61,7 +61,7 @@ The final original group still to document contains:
 
 For the PostgreSQL-first Aurum prototype, Group 1 still provides the simplest initial validation POC path, especially Soda Core and GX Core.
 
-For Group 2, AWS Glue Data Quality has the most direct documented PostgreSQL route through JDBC.
+For Group 2, AWS Glue Data Quality is the first Group 2 service to investigate for PostgreSQL. JDBC is supported in the Data Catalog route when Lake Formation is disabled, while Amazon RDS and Aurora have a separate caveat. The ETL job route is separate.
 
 Group 3 is broader. Monte Carlo, Anomalo and Bigeye become more relevant when Aurum needs continuous production monitoring, learned anomalies, incident management, and investigation context across many datasets. They should not be treated as automatic replacements for Aurum's deterministic promotion policy.
 
