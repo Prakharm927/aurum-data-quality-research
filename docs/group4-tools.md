@@ -118,7 +118,7 @@ It can be relevant when a client already uses Informatica for governed data asse
 
 Informatica uses consumption-based pricing for its Intelligent Data Management Cloud platform.
 
-[Official Informatica pricing](https://www.informatica.com/pricing.html?isappinstalled=0)
+[Official Informatica pricing](https://www.informatica.com/pricing)
 
 ## Main catch
 
@@ -126,7 +126,7 @@ For this research, the official rule page does not name PostgreSQL as a technica
 
 It is also part of the larger Intelligent Data Management Cloud platform, so this is a broader platform choice rather than only a Bronze to Silver validator.
 
-[Official Informatica rules documentation](https://onlinehelp.informatica.com/IICS/prod/DGC/en/cloud-data-governance-and-catalog-working-with-assets/Run_data_quality_rules_on_assets.html) · [Official Informatica pricing](https://www.informatica.com/pricing.html?isappinstalled=0)
+[Official Informatica rules documentation](https://onlinehelp.informatica.com/IICS/prod/DGC/en/cloud-data-governance-and-catalog-working-with-assets/Run_data_quality_rules_on_assets.html) · [Official Informatica pricing](https://www.informatica.com/pricing)
 
 ### Easy meeting line
 
@@ -148,10 +148,11 @@ Qlik completed its acquisition of Talend in May 2023, and the Talend product doc
 
 ```mermaid
 flowchart TD
-  pg["Aurum PostgreSQL<br/>mutual_fund_prices"] ==> input["tPostgresqlInput"]
-  input ==> check["Talend DQ step"]
-  check ==> valid["Valid rows"]
-  check ==> invalid["Invalid rows"]
+  pg["Aurum PostgreSQL<br/>mutual_fund_prices"] ==> validcheck["tPostgresqlValidRows"]
+  pg ==> invalidcheck["tPostgresqlInvalidRows"]
+  pg ==> input["tPostgresqlInput<br/>separate read option"]
+  validcheck ==> valid["Valid rows"]
+  invalidcheck ==> invalid["Invalid rows"]
   valid ==> aurum["Aurum continues"]
   invalid ==> review["Aurum reviews / holds by policy"]
 ```
@@ -164,7 +165,7 @@ This is different from writing one SQL test or one YAML rule. The quality logic 
 
 Suppose Aurum wants to check the format or rule for `fund_symbol`.
 
-Talend Studio can read PostgreSQL data with `tPostgresqlInput`. The `tPostgresqlValidRows` and `tPostgresqlInvalidRows` components split rows according to a data-quality pattern.
+Talend Studio can read PostgreSQL data with `tPostgresqlInput` as a separate input option. For DQ splitting, `tPostgresqlValidRows` and `tPostgresqlInvalidRows` read from PostgreSQL themselves and return the rows that match or do not match the data-quality pattern.
 
 `tPostgresqlValidRows` can check rows against regular-expression patterns or DQ rules and can use an optional WHERE clause.
 
